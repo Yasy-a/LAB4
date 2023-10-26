@@ -1,0 +1,139 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+// Інтерфейс для пошуку товарів
+interface ISearchable
+{
+    List<Tovar> SearchByPrice(decimal maxPrice);
+    List<Tovar> SearchByCategory(string category);
+    List<Tovar> SearchByRating(int minRating);
+}
+
+// Клас для представлення товару
+class Tovar
+{
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public string Description { get; set; }
+    public string Category { get; set; }
+    public int Rating { get; set; }
+}
+
+// Клас для представлення користувача
+class User
+{
+    public string Login { get; set; }
+    public string Password { get; set; }
+    public List<Order> PurchaseHistory { get; set; }
+}
+
+// Клас для представлення замовлення
+class Order
+{
+    public List<Tovar> Items { get; set; }
+    public Dictionary<Tovar, int> ItemQuantities { get; set; }
+    public decimal TotalCost { get; set; }
+    public string Status { get; set; }
+}
+
+// Клас для представлення магазину
+class Shop : ISearchable
+{
+    private List<Tovar> products;
+    private List<User> users;
+    private List<Order> orders;
+
+    public Shop()
+    {
+        products = new List<Tovar>();
+        users = new List<User>();
+        orders = new List<Order>();
+    }
+
+    public void AddProduct(Tovar product)
+    {
+        products.Add(product);
+    }
+
+    public void AddUser(User user)
+    {
+        users.Add(user);
+    }
+
+    public void PlaceOrder(User user, List<Tovar> selectedProducts, Dictionary<Tovar, int> itemQuantities)
+    {
+        decimal totalCost = 0;
+        foreach (var product in selectedProducts)
+        {
+            totalCost += product.Price * itemQuantities[product];
+        }
+
+        var order = new Order
+        {
+            Items = selectedProducts,
+            ItemQuantities = itemQuantities,
+            TotalCost = totalCost,
+            Status = "Pending"
+        };
+
+        user.PurchaseHistory.Add(order);
+        orders.Add(order);
+    }
+
+    public List<Tovar> SearchByPrice(decimal maxPrice)
+    {
+        return products.Where(product => product.Price <= maxPrice).ToList();
+    }
+
+    public List<Tovar> SearchByCategory(string category)
+    {
+        return products.Where(product => product.Category.Equals(category, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    public List<Tovar> SearchByRating(int minRating)
+    {
+        return products.Where(product => product.Rating >= minRating).ToList();
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        Shop shop = new Shop();
+
+        // Додавання товарів
+        shop.AddProduct(new Tovar
+        {
+            Name = "Product1",
+            Price = 10.99M,
+            Description = "Description for Product1",
+            Category = "Category1",
+            Rating = 4
+        });
+
+        // Додавання користувачів
+        shop.AddUser(new User
+        {
+            Login = "User1",
+            Password = "Password1",
+            PurchaseHistory = new List<Order>()
+        });
+
+        // Робимо покупку
+        User user = shop.users.First();
+        var selectedProducts = shop.SearchByCategory("Category1");
+        Dictionary<Tovar, int> itemQuantities = new Dictionary<Tovar, int>
+        {
+            { selectedProducts[0], 2 }
+        };
+        shop.PlaceOrder(user, selectedProducts, itemQuantities);
+
+        Console.WriteLine("Purchase History for User1:");
+        foreach (var order in user.PurchaseHistory)
+        {
+            Console.WriteLine($"Total Cost: {order.TotalCost}, Status: {order.Status}");
+        }
+    }
+}
